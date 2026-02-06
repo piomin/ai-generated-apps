@@ -1,55 +1,38 @@
-# Maven
+HELP.md
 target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
 
-# IntelliJ IDEA
-.idea/
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
 *.iws
 *.iml
 *.ipr
-out/
 
-# Eclipse
-.classpath
-.project
-.settings/
-bin/
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-# VS Code
+### VS Code ###
 .vscode/
 
-# macOS
-.DS_Store
-
-# Logs
-logs/
-*.log
-
-# Temporary files
-*.tmp
-*.bak
-*.swp
-*~.nib
-
-# Spring Boot
-spring-boot-*.log
-
-# Package files
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-# JVM Crash Logs
-hs_err_pid*
+### Maven ###
+.mvn/
+mvnw
+mvnw.cmd

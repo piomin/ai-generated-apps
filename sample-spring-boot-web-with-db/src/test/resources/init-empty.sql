@@ -1,0 +1,2 @@
+-- Empty initialization script for Testcontainers
+-- This is just a placeholder to ensure the database starts correctly

@@ -7,26 +7,18 @@ build:
     - image: sample-spring-boot-web-with-db
       jib:
         project: com.example:sample-spring-boot-web-with-db
-        type: maven
-  local:
-    push: false
+        args:
+          - -Djib.container.jvmFlags=-Xms256m,-Xmx512m
+  tagPolicy:
+    gitCommit: {}
 deploy:
   kubectl:
     manifests:
-      - k8s/namespace.yaml
-      - k8s/postgres-configmap.yaml
-      - k8s/postgres-secret.yaml
-      - k8s/postgres-pvc.yaml
-      - k8s/postgres-deployment.yaml
-      - k8s/postgres-service.yaml
-      - k8s/app-configmap.yaml
-      - k8s/app-secret.yaml
-      - k8s/app-deployment.yaml
-      - k8s/app-service.yaml
+      - k8s/postgres.yaml
+      - k8s/deployment.yaml
 portForward:
   - resourceType: service
-    resourceName: sample-app
-    namespace: sample-app
+    resourceName: sample-spring-boot-service
     port: 80
     localPort: 8080
 profiles:
@@ -38,41 +30,10 @@ profiles:
         - image: sample-spring-boot-web-with-db
           jib:
             project: com.example:sample-spring-boot-web-with-db
-            type: maven
             args:
-              - -Dmaven.test.skip=true
+              - -Djib.container.jvmFlags=-Xms256m,-Xmx512m
     deploy:
       kubectl:
         manifests:
-          - k8s/namespace.yaml
-          - k8s/postgres-configmap.yaml
-          - k8s/postgres-secret.yaml
-          - k8s/postgres-pvc.yaml
-          - k8s/postgres-deployment.yaml
-          - k8s/postgres-service.yaml
-          - k8s/app-configmap.yaml
-          - k8s/app-secret.yaml
-          - k8s/app-deployment.yaml
-          - k8s/app-service.yaml
-  - name: test
-    activation:
-      - command: test
-    build:
-      artifacts:
-        - image: sample-spring-boot-web-with-db
-          jib:
-            project: com.example:sample-spring-boot-web-with-db
-            type: maven
-    deploy:
-      kubectl:
-        manifests:
-          - k8s/namespace.yaml
-          - k8s/postgres-configmap.yaml
-          - k8s/postgres-secret.yaml
-          - k8s/postgres-pvc.yaml
-          - k8s/postgres-deployment.yaml
-          - k8s/postgres-service.yaml
-          - k8s/app-configmap.yaml
-          - k8s/app-secret.yaml
-          - k8s/app-deployment.yaml
-          - k8s/app-service.yaml
+          - k8s/postgres.yaml
+          - k8s/deployment.yaml
