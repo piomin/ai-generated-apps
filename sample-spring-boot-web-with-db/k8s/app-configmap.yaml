@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: sample-app
+  labels:
+    app: sample-app
+data:
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_NAME: sampledb
+  DB_USERNAME: postgres

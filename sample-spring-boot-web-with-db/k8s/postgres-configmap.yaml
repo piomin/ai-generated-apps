@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: sample-app
+  labels:
+    app: postgres
+data:
+  POSTGRES_DB: sampledb
+  POSTGRES_USER: postgres

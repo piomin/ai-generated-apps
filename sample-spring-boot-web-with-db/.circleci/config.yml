@@ -1,0 +1,139 @@
+version: 2.1
+
+orbs:
+  maven: circleci/maven@1.4.1
+
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/openjdk:25.0
+    resource_class: medium
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - maven-deps-v1-{{ checksum "pom.xml" }}
+            - maven-deps-v1-
+      - run:
+          name: Download Dependencies
+          command: mvn dependency:go-offline
+      - save_cache:
+          key: maven-deps-v1-{{ checksum "pom.xml" }}
+          paths:
+            - ~/.m2
+      - run:
+          name: Build Application
+          command: mvn clean package -DskipTests
+      - run:
+          name: Run Tests
+          command: mvn test
+      - run:
+          name: Generate Test Report
+          command: mvn surefire-report:report
+          when: always
+      - store_test_results:
+          path: target/surefire-reports
+      - store_artifacts:
+          path: target/surefire-reports
+          destination: test-reports
+      - persist_to_workspace:
+          root: .
+          paths:
+            - target
+
+  deploy-to-kubernetes:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Install kubectl
+          command: |
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin/
+            kubectl version --client
+      - run:
+          name: Install Kind
+          command: |
+            # For AMD64 / x86_64
+            [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
+            # For ARM64
+            [ $(uname -m) = aarch64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-arm64
+            chmod +x ./kind
+            sudo mv ./kind /usr/local/bin/kind
+            kind version
+      - run:
+          name: Install Skaffold
+          command: |
+            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
+            chmod +x skaffold
+            sudo mv skaffold /usr/local/bin
+            skaffold version
+      - run:
+          name: Create Kind Cluster
+          command: |
+            kind create cluster --name sample-app-test --wait 120s
+            kubectl cluster-info --context kind-sample-app-test
+            kubectl get nodes
+      - run:
+          name: Deploy with Skaffold
+          command: |
+            skaffold run --default-repo=local
+          no_output_timeout: 10m
+      - run:
+          name: Wait for Deployment
+          command: |
+            kubectl wait --for=condition=available --timeout=300s deployment/postgres -n sample-app
+            kubectl wait --for=condition=available --timeout=300s deployment/sample-app -n sample-app
+      - run:
+          name: Check Deployment Status
+          command: |
+            kubectl get all -n sample-app
+            kubectl describe deployment sample-app -n sample-app
+            kubectl describe deployment postgres -n sample-app
+      - run:
+          name: Test API Endpoints
+          command: |
+            # Port forward in background
+            kubectl port-forward -n sample-app service/sample-app 8080:80 &
+            PF_PID=$!
+            sleep 10
+
+            # Test API endpoints
+            echo "Testing GET all persons..."
+            curl -f http://localhost:8080/api/persons || (echo "Failed to get persons" && exit 1)
+
+            echo "Testing POST create person..."
+            curl -f -X POST http://localhost:8080/api/persons \
+              -H "Content-Type: application/json" \
+              -d '{
+                "firstName": "John",
+                "lastName": "Doe",
+                "email": "john.doe@test.com",
+                "phoneNumber": "+1234567890",
+                "city": "Test City",
+                "country": "Test Country"
+              }' || (echo "Failed to create person" && exit 1)
+
+            echo "API tests passed!"
+
+            # Kill port forward
+            kill $PF_PID
+      - run:
+          name: Cleanup
+          command: |
+            kind delete cluster --name sample-app-test
+          when: always
+
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+      - build-and-test
+      - deploy-to-kubernetes:
+          requires:
+            - build-and-test

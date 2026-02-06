@@ -1,0 +1,78 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: sample-spring-boot-web-with-db
+build:
+  artifacts:
+    - image: sample-spring-boot-web-with-db
+      jib:
+        project: com.example:sample-spring-boot-web-with-db
+        type: maven
+  local:
+    push: false
+deploy:
+  kubectl:
+    manifests:
+      - k8s/namespace.yaml
+      - k8s/postgres-configmap.yaml
+      - k8s/postgres-secret.yaml
+      - k8s/postgres-pvc.yaml
+      - k8s/postgres-deployment.yaml
+      - k8s/postgres-service.yaml
+      - k8s/app-configmap.yaml
+      - k8s/app-secret.yaml
+      - k8s/app-deployment.yaml
+      - k8s/app-service.yaml
+portForward:
+  - resourceType: service
+    resourceName: sample-app
+    namespace: sample-app
+    port: 80
+    localPort: 8080
+profiles:
+  - name: dev
+    activation:
+      - command: dev
+    build:
+      artifacts:
+        - image: sample-spring-boot-web-with-db
+          jib:
+            project: com.example:sample-spring-boot-web-with-db
+            type: maven
+            args:
+              - -Dmaven.test.skip=true
+    deploy:
+      kubectl:
+        manifests:
+          - k8s/namespace.yaml
+          - k8s/postgres-configmap.yaml
+          - k8s/postgres-secret.yaml
+          - k8s/postgres-pvc.yaml
+          - k8s/postgres-deployment.yaml
+          - k8s/postgres-service.yaml
+          - k8s/app-configmap.yaml
+          - k8s/app-secret.yaml
+          - k8s/app-deployment.yaml
+          - k8s/app-service.yaml
+  - name: test
+    activation:
+      - command: test
+    build:
+      artifacts:
+        - image: sample-spring-boot-web-with-db
+          jib:
+            project: com.example:sample-spring-boot-web-with-db
+            type: maven
+    deploy:
+      kubectl:
+        manifests:
+          - k8s/namespace.yaml
+          - k8s/postgres-configmap.yaml
+          - k8s/postgres-secret.yaml
+          - k8s/postgres-pvc.yaml
+          - k8s/postgres-deployment.yaml
+          - k8s/postgres-service.yaml
+          - k8s/app-configmap.yaml
+          - k8s/app-secret.yaml
+          - k8s/app-deployment.yaml
+          - k8s/app-service.yaml
