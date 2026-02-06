@@ -6,7 +6,7 @@ The Maven project name should be sample-spring-boot-web-with-db and it should be
 
 The application should have the following features: 
 - A Person entity with id, and typical fields related to each person 
-- - Should implement the Spring Data Repository pattern 
+- Should implement the Spring Data Repository pattern 
 - Should implement CRUD operations for the Person entity 
 - Should use Springdoc OpenAPI to document the REST API 
 - Should use Skaffold and Jib for deployment on Kubernetes 
@@ -21,4 +21,5 @@ The application should use the following technologies:
 - Maven 
 - Springdoc OpenAPI 
 - Java 25
+
 ```
