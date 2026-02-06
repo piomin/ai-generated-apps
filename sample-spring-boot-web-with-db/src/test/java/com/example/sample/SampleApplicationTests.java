@@ -1,6 +1,7 @@
 package com.example.sample;
 
 import com.example.sample.entity.Person;
+import com.example.sample.repository.PersonRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = {SampleApplication.class, TestConfig.class})
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
@@ -47,10 +48,16 @@ class SampleApplicationTests {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private PersonRepository personRepository;
+
     private Person testPerson;
 
     @BeforeEach
     void setUp() {
+        // Clean up database before each test to ensure isolation
+        personRepository.deleteAll();
+
         testPerson = new Person();
         testPerson.setFirstName("John");
         testPerson.setLastName("Doe");
