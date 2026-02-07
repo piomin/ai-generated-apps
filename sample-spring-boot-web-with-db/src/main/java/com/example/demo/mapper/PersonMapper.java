@@ -30,7 +30,6 @@ public class PersonMapper {
             return null;
         }
         Person person = new Person();
-        person.setId(dto.getId());
         person.setFirstName(dto.getFirstName());
         person.setLastName(dto.getLastName());
         person.setEmail(dto.getEmail());
