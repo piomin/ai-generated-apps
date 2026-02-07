@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.PersonDTO;
 import com.example.demo.entity.Person;
+import com.example.demo.mapper.PersonMapper;
 import com.example.demo.repository.PersonRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,35 +24,39 @@ import java.util.List;
 public class PersonController {
 
     private final PersonRepository personRepository;
+    private final PersonMapper personMapper;
 
-    public PersonController(PersonRepository personRepository) {
+    public PersonController(PersonRepository personRepository, PersonMapper personMapper) {
         this.personRepository = personRepository;
+        this.personMapper = personMapper;
     }
 
     @Operation(summary = "Get all persons", description = "Retrieve a list of all persons")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved list",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Person.class)))
+                            schema = @Schema(implementation = PersonDTO.class)))
     })
     @GetMapping
-    public ResponseEntity<List<Person>> getAllPersons() {
+    public ResponseEntity<List<PersonDTO>> getAllPersons() {
         List<Person> persons = personRepository.findAll();
-        return ResponseEntity.ok(persons);
+        List<PersonDTO> personDTOs = personMapper.toDTOList(persons);
+        return ResponseEntity.ok(personDTOs);
     }
 
     @Operation(summary = "Get person by ID", description = "Retrieve a person by their ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved person",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Person.class))),
+                            schema = @Schema(implementation = PersonDTO.class))),
             @ApiResponse(responseCode = "404", description = "Person not found",
                     content = @Content)
     })
     @GetMapping("/{id}")
-    public ResponseEntity<Person> getPersonById(
+    public ResponseEntity<PersonDTO> getPersonById(
             @Parameter(description = "ID of the person to retrieve") @PathVariable Long id) {
         return personRepository.findById(id)
+                .map(personMapper::toDTO)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -59,41 +65,39 @@ public class PersonController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Person created successfully",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Person.class))),
+                            schema = @Schema(implementation = PersonDTO.class))),
             @ApiResponse(responseCode = "400", description = "Invalid input",
                     content = @Content)
     })
     @PostMapping
-    public ResponseEntity<Person> createPerson(
-            @Parameter(description = "Person object to be created") @Valid @RequestBody Person person) {
+    public ResponseEntity<PersonDTO> createPerson(
+            @Parameter(description = "Person object to be created") @Valid @RequestBody PersonDTO personDTO) {
+        Person person = personMapper.toEntity(personDTO);
         Person savedPerson = personRepository.save(person);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedPerson);
+        PersonDTO responseDTO = personMapper.toDTO(savedPerson);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
     @Operation(summary = "Update a person", description = "Update an existing person by their ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Person updated successfully",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Person.class))),
+                            schema = @Schema(implementation = PersonDTO.class))),
             @ApiResponse(responseCode = "404", description = "Person not found",
                     content = @Content),
             @ApiResponse(responseCode = "400", description = "Invalid input",
                     content = @Content)
     })
     @PutMapping("/{id}")
-    public ResponseEntity<Person> updatePerson(
+    public ResponseEntity<PersonDTO> updatePerson(
             @Parameter(description = "ID of the person to update") @PathVariable Long id,
-            @Parameter(description = "Updated person object") @Valid @RequestBody Person personDetails) {
+            @Parameter(description = "Updated person object") @Valid @RequestBody PersonDTO personDTO) {
         return personRepository.findById(id)
                 .map(person -> {
-                    person.setFirstName(personDetails.getFirstName());
-                    person.setLastName(personDetails.getLastName());
-                    person.setEmail(personDetails.getEmail());
-                    person.setDateOfBirth(personDetails.getDateOfBirth());
-                    person.setPhoneNumber(personDetails.getPhoneNumber());
-                    person.setAddress(personDetails.getAddress());
+                    personMapper.updateEntityFromDTO(personDTO, person);
                     Person updatedPerson = personRepository.save(person);
-                    return ResponseEntity.ok(updatedPerson);
+                    PersonDTO responseDTO = personMapper.toDTO(updatedPerson);
+                    return ResponseEntity.ok(responseDTO);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }

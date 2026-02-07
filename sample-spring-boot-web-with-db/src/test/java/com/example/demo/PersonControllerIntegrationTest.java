@@ -1,5 +1,6 @@
 package com.example.demo;
 
+import com.example.demo.dto.PersonDTO;
 import com.example.demo.entity.Person;
 import com.example.demo.repository.PersonRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,12 +61,12 @@ class PersonControllerIntegrationTest {
 
     @Test
     void shouldCreatePerson() throws Exception {
-        Person person = new Person("John", "Doe", "john.doe@example.com",
+        PersonDTO personDTO = new PersonDTO(null, "John", "Doe", "john.doe@example.com",
                 LocalDate.of(1990, 1, 15), "+1234567890", "123 Main St");
 
         mockMvc.perform(post("/api/persons")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(person)))
+                        .content(objectMapper.writeValueAsString(personDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.firstName").value("John"))
@@ -119,12 +120,12 @@ class PersonControllerIntegrationTest {
                 LocalDate.of(1990, 1, 15), "+1234567890", "123 Main St");
         Person savedPerson = personRepository.save(person);
 
-        Person updatedPerson = new Person("John", "Smith", "john.smith@example.com",
+        PersonDTO updatedPersonDTO = new PersonDTO(null, "John", "Smith", "john.smith@example.com",
                 LocalDate.of(1990, 1, 15), "+9999999999", "789 New St");
 
         mockMvc.perform(put("/api/persons/{id}", savedPerson.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedPerson)))
+                        .content(objectMapper.writeValueAsString(updatedPersonDTO)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(savedPerson.getId()))
                 .andExpect(jsonPath("$.firstName").value("John"))
@@ -136,12 +137,12 @@ class PersonControllerIntegrationTest {
 
     @Test
     void shouldReturnNotFoundWhenUpdatingNonExistentPerson() throws Exception {
-        Person person = new Person("John", "Doe", "john.doe@example.com",
+        PersonDTO personDTO = new PersonDTO(null, "John", "Doe", "john.doe@example.com",
                 LocalDate.of(1990, 1, 15), "+1234567890", "123 Main St");
 
         mockMvc.perform(put("/api/persons/{id}", 99999L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(person)))
+                        .content(objectMapper.writeValueAsString(personDTO)))
                 .andExpect(status().isNotFound());
     }
 
@@ -166,12 +167,12 @@ class PersonControllerIntegrationTest {
 
     @Test
     void shouldValidatePersonCreation() throws Exception {
-        Person invalidPerson = new Person("", "", "invalid-email",
+        PersonDTO invalidPersonDTO = new PersonDTO(null, "", "", "invalid-email",
                 LocalDate.now().plusDays(1), "+1234567890", "123 Main St");
 
         mockMvc.perform(post("/api/persons")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidPerson)))
+                        .content(objectMapper.writeValueAsString(invalidPersonDTO)))
                 .andExpect(status().isBadRequest());
     }
 }
