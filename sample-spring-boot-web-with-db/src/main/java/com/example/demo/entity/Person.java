@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 @Entity
-@Table(name = "person")
+@Table(name = "persons")
 public class Person {
 
     @Id
@@ -27,8 +27,8 @@ public class Person {
     @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
-    @Email(message = "Email must be valid")
     @NotBlank(message = "Email is required")
+    @Email(message = "Email should be valid")
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
@@ -56,6 +56,7 @@ public class Person {
         this.address = address;
     }
 
+    // Getters and Setters
     public Long getId() {
         return id;
     }

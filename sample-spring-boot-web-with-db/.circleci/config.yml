@@ -1,75 +1,57 @@
 version: 2.1
 
 orbs:
-  maven: circleci/maven@1.4.1
+  docker: circleci/docker@2.2.0
 
 jobs:
-  build:
+  build-and-test:
     docker:
-      - image: cimg/openjdk:25.0
-    resource_class: large
+      - image: eclipse-temurin:25-jdk
+    working_directory: ~/repo
     steps:
       - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
             - v1-dependencies-
       - run:
-          name: Build with Maven
-          command: mvn clean package -DskipTests
+          name: Download dependencies
+          command: ./mvnw dependency:resolve dependency:resolve-plugins
       - save_cache:
           paths:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
-      - persist_to_workspace:
-          root: .
-          paths:
-            - target
-            - pom.xml
-
-  test:
-    docker:
-      - image: cimg/openjdk:25.0
-    resource_class: large
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-            - v1-dependencies-
-      - setup_remote_docker:
-          version: 20.10.24
-          docker_layer_caching: true
       - run:
-          name: Run Tests
-          command: mvn test
+          name: Run tests
+          command: ./mvnw clean test
+      - run:
+          name: Build application
+          command: ./mvnw package -DskipTests
       - store_test_results:
           path: target/surefire-reports
       - store_artifacts:
-          path: target/surefire-reports
+          path: target/*.jar
+      - persist_to_workspace:
+          root: .
+          paths:
+            - target/*.jar
+            - k8s
+            - skaffold.yaml
+            - pom.xml
 
-  deploy-test:
+  deploy-to-k8s:
     machine:
-      image: ubuntu-2404:current
-    resource_class: large
+      image: ubuntu-2204:current
+    working_directory: ~/repo
     steps:
-      - checkout
       - attach_workspace:
-          at: .
-      - run:
-          name: Install Java 25
-          command: |
-            wget https://download.oracle.com/java/25/latest/jdk-25_linux-x64_bin.tar.gz
-            sudo mkdir -p /opt/java
-            sudo tar -xzf jdk-25_linux-x64_bin.tar.gz -C /opt/java
-            echo 'export JAVA_HOME=/opt/java/jdk-25' >> $BASH_ENV
-            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
-            source $BASH_ENV
-            java -version
+          at: ~/repo
       - run:
           name: Install Kind
           command: |
-            curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.25.0/kind-linux-amd64
+            curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
             chmod +x ./kind
             sudo mv ./kind /usr/local/bin/kind
       - run:
@@ -85,39 +67,41 @@ jobs:
             chmod +x skaffold
             sudo mv skaffold /usr/local/bin/
       - run:
-          name: Create Kind Cluster
+          name: Create Kind cluster
           command: |
-            kind create cluster --name test-cluster --wait 5m
+            kind create cluster --name test-cluster --wait 300s
             kubectl cluster-info --context kind-test-cluster
       - run:
           name: Deploy with Skaffold
           command: |
-            skaffold run --default-repo=local --port-forward=false
-          no_output_timeout: 20m
+            skaffold run --default-repo=local --tail
       - run:
-          name: Wait for Deployment
+          name: Wait for deployment
           command: |
-            kubectl wait --for=condition=ready pod -l app=postgres --timeout=300s
-            kubectl wait --for=condition=ready pod -l app=sample-spring-boot-app --timeout=300s
+            kubectl wait --for=condition=available --timeout=300s deployment/sample-spring-boot-app
+            kubectl wait --for=condition=available --timeout=300s deployment/postgres
       - run:
-          name: Verify Deployment
+          name: Verify deployment
           command: |
             kubectl get pods
             kubectl get services
-            kubectl logs -l app=sample-spring-boot-app --tail=50
+            kubectl describe deployment sample-spring-boot-app
+      - run:
+          name: Test application endpoint
+          command: |
+            kubectl port-forward svc/sample-spring-boot-app 8080:80 &
+            sleep 10
+            curl -f http://localhost:8080/actuator/health || exit 1
       - run:
           name: Cleanup
-          command: kind delete cluster --name test-cluster
           when: always
+          command: kind delete cluster --name test-cluster
 
 workflows:
   version: 2
   build-test-deploy:
     jobs:
-      - build
-      - test:
+      - build-and-test
+      - deploy-to-k8s:
           requires:
-            - build
-      - deploy-test:
-          requires:
-            - test
+            - build-and-test

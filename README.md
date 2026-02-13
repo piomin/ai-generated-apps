@@ -8,7 +8,8 @@ The application should have the following features:
 - A Person entity with id, and typical fields related to each person 
 - Should implement the Spring Data Repository pattern 
 - Should implement CRUD operations for the Person entity 
-- Should use Springdoc OpenAPI to document the REST API 
+- Should use Springdoc OpenAPI to document the REST API
+- Should protect all rest endpoints with JWT and OAuth2 
 - Should use Skaffold and Jib for deployment on Kubernetes 
 - Should contain all the deployment files for Kubernetes 
 - Should implement tests with Testcontainers to verify all exposed endpoints 

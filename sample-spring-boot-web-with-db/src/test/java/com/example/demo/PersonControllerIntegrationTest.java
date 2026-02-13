@@ -21,6 +21,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.LocalDate;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -64,6 +65,7 @@ class PersonControllerIntegrationTest {
                 LocalDate.of(1990, 1, 15), "+1234567890", "123 Main St");
 
         mockMvc.perform(post("/api/persons")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(person)))
                 .andExpect(status().isCreated())
@@ -86,7 +88,8 @@ class PersonControllerIntegrationTest {
         personRepository.save(person1);
         personRepository.save(person2);
 
-        mockMvc.perform(get("/api/persons"))
+        mockMvc.perform(get("/api/persons")
+                        .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].firstName").value("John"))
@@ -99,7 +102,8 @@ class PersonControllerIntegrationTest {
                 LocalDate.of(1990, 1, 15), "+1234567890", "123 Main St");
         Person savedPerson = personRepository.save(person);
 
-        mockMvc.perform(get("/api/persons/{id}", savedPerson.getId()))
+        mockMvc.perform(get("/api/persons/{id}", savedPerson.getId())
+                        .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(savedPerson.getId()))
                 .andExpect(jsonPath("$.firstName").value("John"))
@@ -109,7 +113,8 @@ class PersonControllerIntegrationTest {
 
     @Test
     void shouldReturnNotFoundForInvalidPersonId() throws Exception {
-        mockMvc.perform(get("/api/persons/{id}", 99999L))
+        mockMvc.perform(get("/api/persons/{id}", 99999L)
+                        .with(jwt()))
                 .andExpect(status().isNotFound());
     }
 
@@ -123,6 +128,7 @@ class PersonControllerIntegrationTest {
                 LocalDate.of(1990, 1, 15), "+9999999999", "789 New St");
 
         mockMvc.perform(put("/api/persons/{id}", savedPerson.getId())
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updatedPerson)))
                 .andExpect(status().isOk())
@@ -140,6 +146,7 @@ class PersonControllerIntegrationTest {
                 LocalDate.of(1990, 1, 15), "+1234567890", "123 Main St");
 
         mockMvc.perform(put("/api/persons/{id}", 99999L)
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(person)))
                 .andExpect(status().isNotFound());
@@ -151,16 +158,19 @@ class PersonControllerIntegrationTest {
                 LocalDate.of(1990, 1, 15), "+1234567890", "123 Main St");
         Person savedPerson = personRepository.save(person);
 
-        mockMvc.perform(delete("/api/persons/{id}", savedPerson.getId()))
+        mockMvc.perform(delete("/api/persons/{id}", savedPerson.getId())
+                        .with(jwt()))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/persons/{id}", savedPerson.getId()))
+        mockMvc.perform(get("/api/persons/{id}", savedPerson.getId())
+                        .with(jwt()))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void shouldReturnNotFoundWhenDeletingNonExistentPerson() throws Exception {
-        mockMvc.perform(delete("/api/persons/{id}", 99999L))
+        mockMvc.perform(delete("/api/persons/{id}", 99999L)
+                        .with(jwt()))
                 .andExpect(status().isNotFound());
     }
 
@@ -170,6 +180,7 @@ class PersonControllerIntegrationTest {
                 LocalDate.now().plusDays(1), "+1234567890", "123 Main St");
 
         mockMvc.perform(post("/api/persons")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidPerson)))
                 .andExpect(status().isBadRequest());

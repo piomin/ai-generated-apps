@@ -1,0 +1,4 @@
+#!/bin/sh
+# Maven Wrapper script
+
+exec mvn "$@"

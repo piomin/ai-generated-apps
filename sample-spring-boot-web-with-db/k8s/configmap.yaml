@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  db.host: "postgres"
+  db.port: "5432"
+  db.name: "sampledb"
+  jwt.issuer.uri: "https://example.com/oauth2/default"
+  jwt.jwk.set.uri: "https://example.com/oauth2/default/v1/keys"
