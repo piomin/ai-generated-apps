@@ -70,11 +70,13 @@ public class Trip {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @PrePersist
+    `@PrePersist`
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        requestedAt = LocalDateTime.now();
+        if (requestedAt == null) {
+            requestedAt = LocalDateTime.now();
+        }
     }
 
     @PreUpdate
