@@ -1,220 +1,158 @@
-# Sample Spring Boot Web Application with PostgreSQL
+# Sample Spring Boot Web Application with Database
 
-A sample Spring Boot 4 application demonstrating a RESTful API with PostgreSQL database, complete with Kubernetes deployment configurations.
-
-## Technologies Used
-
-- **Spring Boot 4.0.0-M2** - Application framework
-- **Java 25** - Programming language
-- **Spring Data JPA** - Data persistence
-- **PostgreSQL** - Relational database
-- **Liquibase** - Database schema migration
-- **Springdoc OpenAPI** - API documentation
-- **Testcontainers** - Integration testing
-- **Jib** - Container image building
-- **Skaffold** - Kubernetes deployment automation
-- **CircleCI** - CI/CD pipeline
+A production-ready Spring Boot 4 application with PostgreSQL, JWT/OAuth2 security, Kubernetes deployment, and CI/CD pipeline.
 
 ## Features
 
-- RESTful CRUD API for Person entities
-- PostgreSQL database with Liquibase migrations
-- Interactive API documentation with Swagger UI
-- Comprehensive integration tests using Testcontainers
-- Kubernetes-ready with health checks
-- CI/CD pipeline with CircleCI
-- Containerized deployment with Jib and Skaffold
+- **Spring Boot 4.0.0-M2** with Java 25
+- **Person Entity** with full CRUD operations
+- **JWT/OAuth2 Security** protecting all REST endpoints
+- **PostgreSQL** database with Liquibase schema management
+- **OpenAPI/Swagger** documentation
+- **Testcontainers** integration tests
+- **Kubernetes** deployment manifests
+- **Skaffold** for container building with Jib
+- **CircleCI** pipeline with Kind cluster testing
 
-## Prerequisites
+## Technology Stack
 
-- JDK 25
-- Maven 3.9+
-- Docker (for running tests and local deployment)
-- kubectl (for Kubernetes deployment)
-- Skaffold (for Kubernetes development workflow)
-
-## Building the Application
-
-```bash
-mvn clean package
-```
-
-## Running Tests
-
-The application includes comprehensive integration tests using Testcontainers:
-
-```bash
-mvn test
-```
-
-## Running Locally
-
-### With Docker Compose (Recommended)
-
-1. Start PostgreSQL:
-```bash
-docker run -d \
-  --name postgres \
-  -e POSTGRES_DB=sampledb \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 \
-  postgres:17
-```
-
-2. Run the application:
-```bash
-mvn spring-boot:run
-```
-
-The application will be available at `http://localhost:8080`
-
-### API Documentation
-
-Once the application is running, access the Swagger UI at:
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- OpenAPI JSON: http://localhost:8080/api-docs
+- Spring Boot 4
+- Spring Data JPA
+- Spring Security with OAuth2 Resource Server
+- PostgreSQL
+- Liquibase
+- Springdoc OpenAPI
+- Testcontainers
+- Maven
+- Jib
+- Skaffold
+- Kubernetes
+- CircleCI
 
 ## API Endpoints
 
-### Person REST API
+All endpoints require JWT Bearer token authentication (except health and Swagger UI).
 
 - `GET /api/persons` - Get all persons
 - `GET /api/persons/{id}` - Get person by ID
-- `POST /api/persons` - Create a new person
-- `PUT /api/persons/{id}` - Update a person
-- `DELETE /api/persons/{id}` - Delete a person
+- `POST /api/persons` - Create new person
+- `PUT /api/persons/{id}` - Update person
+- `DELETE /api/persons/{id}` - Delete person
 
-### Example Request
+## Running Locally
+
+### Prerequisites
+
+- Java 25
+- Docker (for PostgreSQL)
+- Maven
+
+### Start PostgreSQL
 
 ```bash
-curl -X POST http://localhost:8080/api/persons \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "John",
-    "lastName": "Doe",
-    "email": "john.doe@example.com",
-    "dateOfBirth": "1990-01-15",
-    "phoneNumber": "+1234567890",
-    "address": "123 Main St"
-  }'
+docker run --name postgres -e POSTGRES_DB=sampledb -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:17
 ```
+
+### Run the Application
+
+```bash
+./mvnw spring-boot:run
+```
+
+### Access Swagger UI
+
+http://localhost:8080/swagger-ui.html
+
+### Access API Docs
+
+http://localhost:8080/api-docs
+
+## Running Tests
+
+```bash
+./mvnw test
+```
+
+Tests use Testcontainers to spin up PostgreSQL automatically.
 
 ## Deploying to Kubernetes
 
 ### Prerequisites
 
-- A Kubernetes cluster (local or cloud)
-- kubectl configured to connect to your cluster
-- Skaffold installed
+- Docker
+- kubectl
+- Skaffold
 
-### Using Skaffold
+### Deploy with Skaffold
 
-1. Deploy to Kubernetes:
-```bash
-skaffold run
-```
-
-2. For development with hot reload:
 ```bash
 skaffold dev
 ```
 
-3. To delete the deployment:
-```bash
-skaffold delete
-```
+This will:
+1. Build the Docker image using Jib
+2. Deploy PostgreSQL to Kubernetes
+3. Deploy the application to Kubernetes
+4. Set up port forwarding to localhost:8080
 
 ### Manual Kubernetes Deployment
 
-1. Build the container image:
 ```bash
-mvn compile jib:dockerBuild
-```
-
-2. Apply Kubernetes manifests:
-```bash
-kubectl apply -f k8s/postgres.yaml
-kubectl apply -f k8s/deployment.yaml
-```
-
-3. Check deployment status:
-```bash
-kubectl get pods
-kubectl get services
-```
-
-4. Access the application:
-```bash
-kubectl port-forward service/sample-spring-boot-service 8080:80
+kubectl apply -f k8s/
 ```
 
 ## Configuration
 
-### Application Properties
+### Environment Variables
 
-The application can be configured using environment variables:
-
-- `DB_HOST` - Database host (default: localhost)
-- `DB_PORT` - Database port (default: 5432)
+- `DB_HOST` - PostgreSQL host (default: localhost)
+- `DB_PORT` - PostgreSQL port (default: 5432)
 - `DB_NAME` - Database name (default: sampledb)
 - `DB_USER` - Database username (default: postgres)
 - `DB_PASSWORD` - Database password (default: postgres)
+- `JWT_ISSUER_URI` - OAuth2 issuer URI
+- `JWT_JWK_SET_URI` - JWK Set URI for JWT validation
 
-### Database Schema
+### JWT Configuration
 
-Database schema is managed by Liquibase. Changes are tracked in:
-- `src/main/resources/db/changelog/db.changelog-master.xml`
-- `src/main/resources/db/changelog/changes/`
+For production, configure your OAuth2 provider:
+
+```yaml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://your-oauth-provider.com
+          jwk-set-uri: https://your-oauth-provider.com/.well-known/jwks.json
+```
 
 ## CI/CD Pipeline
 
-The project includes a CircleCI configuration (`.circleci/config.yml`) that:
+The CircleCI pipeline:
 
-1. Builds the application
-2. Runs all tests
-3. Tests deployment to Kubernetes using Kind
+1. **Build and Test** - Compiles code and runs all tests
+2. **Deploy to K8s** - Creates Kind cluster, deploys with Skaffold, verifies deployment
 
-## Project Structure
+## Security
 
-```
-sample-spring-boot-web-with-db/
-├── src/
-│   ├── main/
-│   │   ├── java/com/example/demo/
-│   │   │   ├── controller/     # REST controllers
-│   │   │   ├── entity/         # JPA entities
-│   │   │   ├── repository/     # Spring Data repositories
-│   │   │   └── DemoApplication.java
-│   │   └── resources/
-│   │       ├── db/changelog/   # Liquibase migrations
-│   │       └── application.yml
-│   └── test/
-│       └── java/com/example/demo/
-│           └── PersonControllerIntegrationTest.java
-├── k8s/                        # Kubernetes manifests
-│   ├── deployment.yaml
-│   └── postgres.yaml
-├── skaffold.yaml              # Skaffold configuration
-├── .circleci/
-│   └── config.yml             # CircleCI pipeline
-└── pom.xml
-```
+- All REST endpoints protected with JWT/OAuth2
+- Passwords stored in Kubernetes Secrets
+- Stateless session management
+- CSRF disabled (for stateless API)
 
-## Health Checks
+## Database Schema
 
-The application exposes health check endpoints via Spring Boot Actuator:
+Managed by Liquibase. Initial schema creates `persons` table with:
 
-- Liveness: `/actuator/health/liveness`
-- Readiness: `/actuator/health/readiness`
-
-## Notes
-
-- Tests use Hibernate's `ddl-auto=create-drop` for schema generation
-- Production uses Liquibase for database migrations
-- The application uses Spring Boot 4.0.0-M2 (milestone release) with Java 25
-- Tests require Docker to run Testcontainers
+- `id` - Primary key (auto-generated)
+- `first_name` - VARCHAR(100)
+- `last_name` - VARCHAR(100)
+- `email` - VARCHAR(255) - Unique
+- `date_of_birth` - DATE
+- `phone_number` - VARCHAR(20)
+- `address` - VARCHAR(500)
 
 ## License
 
-This is a sample application for demonstration purposes.
+Apache 2.0

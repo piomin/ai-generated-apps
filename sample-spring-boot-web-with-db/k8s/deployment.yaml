@@ -16,55 +16,61 @@ spec:
     spec:
       containers:
         - name: app
-          image: sample-spring-boot-web-with-db:latest
+          image: sample-spring-boot-web-with-db
           ports:
             - containerPort: 8080
           env:
             - name: DB_HOST
-              value: postgres-service
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: db.host
             - name: DB_PORT
-              value: "5432"
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: db.port
             - name: DB_NAME
-              value: sampledb
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: db.name
             - name: DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secret
-                  key: username
+                  name: app-secrets
+                  key: db.username
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secret
-                  key: password
+                  name: app-secrets
+                  key: db.password
+            - name: JWT_ISSUER_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: jwt.issuer.uri
+            - name: JWT_JWK_SET_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: jwt.jwk.set.uri
           livenessProbe:
             httpGet:
-              path: /actuator/health/liveness
+              path: /actuator/health
               port: 8080
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
+              path: /actuator/health
               port: 8080
             initialDelaySeconds: 20
             periodSeconds: 5
           resources:
             requests:
-              memory: "512Mi"
+              memory: "256Mi"
               cpu: "250m"
             limits:
-              memory: "1Gi"
+              memory: "512Mi"
               cpu: "500m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: sample-spring-boot-service
-spec:
-  selector:
-    app: sample-spring-boot-app
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8080
-  type: LoadBalancer

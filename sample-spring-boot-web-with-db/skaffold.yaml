@@ -2,38 +2,26 @@ apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: sample-spring-boot-web-with-db
+
 build:
   artifacts:
     - image: sample-spring-boot-web-with-db
       jib:
         project: com.example:sample-spring-boot-web-with-db
         args:
-          - -Djib.container.jvmFlags=-Xms256m,-Xmx512m
-  tagPolicy:
-    gitCommit: {}
+          - -DskipTests
+
 deploy:
   kubectl:
     manifests:
-      - k8s/postgres.yaml
+      - k8s/configmap.yaml
+      - k8s/secret.yaml
+      - k8s/postgres-deployment.yaml
       - k8s/deployment.yaml
+      - k8s/service.yaml
+
 portForward:
   - resourceType: service
-    resourceName: sample-spring-boot-service
+    resourceName: sample-spring-boot-app
     port: 80
     localPort: 8080
-profiles:
-  - name: dev
-    activation:
-      - command: dev
-    build:
-      artifacts:
-        - image: sample-spring-boot-web-with-db
-          jib:
-            project: com.example:sample-spring-boot-web-with-db
-            args:
-              - -Djib.container.jvmFlags=-Xms256m,-Xmx512m
-    deploy:
-      kubectl:
-        manifests:
-          - k8s/postgres.yaml
-          - k8s/deployment.yaml
