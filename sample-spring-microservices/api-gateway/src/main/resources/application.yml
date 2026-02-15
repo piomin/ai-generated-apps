@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/users/**
+        - id: driver-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/drivers/**
+        - id: trip-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/trips/**
+        - id: review-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/reviews/**
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/taxi
+          jwk-set-uri: http://localhost:8080/realms/taxi/protocol/openid-connect/certs
+
+server:
+  port: 8000
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
