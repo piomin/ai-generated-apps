@@ -1,5 +1,6 @@
 package com.taxi.user.dto;
 
+import com.taxi.user.validation.ValidCardNumber;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -13,7 +14,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class PaymentCardRequest {
     @NotBlank(message = "Card number is required")
-    @Pattern(regexp = "\\d{16}", message = "Card number must be 16 digits")
+    @ValidCardNumber(message = "Card number must be 13-19 digits and pass Luhn checksum validation")
     private String cardNumber;
 
     @NotBlank(message = "Card holder name is required")

@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
@@ -45,7 +46,10 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    // Internal endpoint for service-to-service communication only
+    // Requires SERVICE role to prevent unauthorized access to PII
     @GetMapping("/{userId}")
+    @PreAuthorize("hasRole('SERVICE') or (hasRole('USER') and #userId == authentication.principal.claims['user_id'])")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long userId) {
         UserResponse response = userService.getUserById(userId);
         return ResponseEntity.ok(response);
