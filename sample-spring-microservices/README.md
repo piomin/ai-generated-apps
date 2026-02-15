@@ -157,7 +157,7 @@ Legend:
 ## Technologies
 
 - Java 21
-- Spring Boot 3.2.1
+- Spring Boot 3.4.1
 - Spring Cloud Gateway
 - Spring Data JPA
 - Spring Security with OAuth2 Resource Server
