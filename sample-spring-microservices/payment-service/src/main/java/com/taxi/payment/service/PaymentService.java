@@ -7,6 +7,7 @@ import com.taxi.payment.model.Payment;
 import com.taxi.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -52,13 +53,10 @@ public class PaymentService {
 
         try {
             paymentRepository.save(payment);
-        } catch (Exception e) {
+        } catch (DataIntegrityViolationException e) {
             // Handle unique constraint violation as idempotency (concurrent delivery)
-            if (e.getMessage() != null && e.getMessage().contains("constraint")) {
-                log.info("Payment already processed for trip: {} (concurrent delivery)", event.getTripId());
-                return;
-            }
-            throw e;
+            log.info("Payment already processed for trip: {} (concurrent delivery)", event.getTripId());
+            return;
         }
 
         // Publish payment processed event
