@@ -1,17 +1,18 @@
 package com.taxi.user.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = "paymentCard")
+@EqualsAndHashCode(exclude = "paymentCard")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

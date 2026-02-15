@@ -26,6 +26,12 @@ public class PaymentService {
     public void processTripCompletedEvent(TripCompletedEvent event) {
         log.info("Processing payment for trip: {}", event.getTripId());
 
+        // Idempotency check: skip if payment already exists for this trip
+        if (paymentRepository.existsByTripId(event.getTripId())) {
+            log.info("Payment already exists for trip: {}, skipping duplicate processing", event.getTripId());
+            return;
+        }
+
         Payment payment = new Payment();
         payment.setTripId(event.getTripId());
         payment.setUserId(event.getUserId());
@@ -44,7 +50,16 @@ public class PaymentService {
             log.error("Payment failed for trip: {}", event.getTripId());
         }
 
-        paymentRepository.save(payment);
+        try {
+            paymentRepository.save(payment);
+        } catch (Exception e) {
+            // Handle unique constraint violation as idempotency (concurrent delivery)
+            if (e.getMessage() != null && e.getMessage().contains("constraint")) {
+                log.info("Payment already processed for trip: {} (concurrent delivery)", event.getTripId());
+                return;
+            }
+            throw e;
+        }
 
         // Publish payment processed event
         PaymentProcessedEvent paymentEvent = new PaymentProcessedEvent(

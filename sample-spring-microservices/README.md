@@ -6,6 +6,98 @@ A comprehensive taxi reservation system built with Spring Boot microservices, fe
 
 This system implements a microservices architecture with the following services:
 
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              Client Application                                  │
+│                         (Mobile App / Web Frontend)                              │
+└────────────────────────────────┬────────────────────────────────────────────────┘
+                                 │
+                                 │ HTTP/REST + JWT
+                                 ▼
+                    ┌────────────────────────┐
+                    │    Keycloak (8080)     │
+                    │   OAuth2/JWT Server    │
+                    └────────────────────────┘
+                                 │
+                                 │ JWT Validation
+                                 ▼
+                    ┌────────────────────────┐
+                    │  API Gateway (8000)    │
+                    │  Spring Cloud Gateway  │
+                    │  - Authentication      │
+                    │  - Routing             │
+                    └────────┬───────────────┘
+                             │
+         ┌───────────────────┼───────────────────┬────────────────┐
+         │                   │                   │                │
+         ▼                   ▼                   ▼                ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  User Service   │ │ Driver Service  │ │  Trip Service   │ │ Review Service  │
+│    (8081)       │ │     (8082)      │ │     (8083)      │ │     (8085)      │
+│                 │ │                 │ │                 │ │                 │
+│ - Registration  │ │ - Registration  │ │ - Fare Calc     │ │ - Reviews       │
+│ - Card Mgmt     │ │ - Car Details   │ │ - Reservations  │ │ - Ratings       │
+│ - Profile       │ │ - Location      │ │ - History       │ │ - Summaries     │
+└────────┬────────┘ └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
+         │                   │                   │                   │
+         │                   │                   │                   │
+         ▼                   ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│   user_db       │ │   driver_db     │ │    trip_db      │ │   review_db     │
+│  PostgreSQL     │ │  PostgreSQL     │ │  PostgreSQL     │ │  PostgreSQL     │
+│   (5432)        │ │   (5433)        │ │   (5434)        │ │   (5436)        │
+└─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
+                             │                   │
+                             │                   │
+                             └──────┐   ┌────────┘
+                                    │   │
+                                    ▼   ▼
+                         ┌──────────────────────┐
+                         │   Apache Kafka       │
+                         │      (9092)          │
+                         │                      │
+                         │ Topics:              │
+                         │ - trip-completed     │
+                         │ - payment-processed  │
+                         │ - driver-location    │
+                         └──────┬───────┬───────┘
+                                │       │
+                    ┌───────────┘       └───────────┐
+                    │                               │
+                    ▼                               ▼
+         ┌─────────────────────┐       ┌─────────────────────┐
+         │  Payment Service    │       │ Notification Service│
+         │      (8084)         │       │      (8086)         │
+         │                     │       │                     │
+         │ - Payment Process   │       │ - Email Sender      │
+         │ - Kafka Consumer    │       │ - Kafka Consumer    │
+         │ - Kafka Producer    │       │ - Trip Summaries    │
+         └──────────┬──────────┘       └─────────────────────┘
+                    │
+                    ▼
+         ┌─────────────────────┐
+         │    payment_db       │
+         │    PostgreSQL       │
+         │      (5435)         │
+         └─────────────────────┘
+
+Legend:
+───▶  Synchronous HTTP/REST Communication
+═══▶  Asynchronous Kafka Events
+```
+
+### Communication Patterns
+
+**Synchronous (REST/HTTP):**
+- Client → API Gateway → Microservices
+- All REST endpoints protected with JWT
+
+**Asynchronous (Kafka Events):**
+- Driver Service → Kafka (driver-location-update)
+- Trip Service → Kafka (trip-completed)
+- Payment Service ← Kafka (trip-completed) → Kafka (payment-processed)
+- Notification Service ← Kafka (trip-completed)
+
 ### Services
 
 1. **API Gateway** (Port 8000)

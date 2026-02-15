@@ -21,7 +21,7 @@ public class Trip {
     @Column(nullable = false)
     private Long userId;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Long driverId;
 
     @Column(nullable = false)

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,7 +29,18 @@ public class UserController {
             @PathVariable Long userId,
             @Valid @RequestBody PaymentCardRequest request,
             Authentication authentication) {
-        // In production, verify that userId matches authenticated user
+        // Verify that userId matches authenticated user or user has ADMIN role
+        String authenticatedEmail = authentication.getName();
+        UserResponse authenticatedUser = userService.getUserByEmail(authenticatedEmail);
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> role.equals("ROLE_ADMIN"));
+
+        if (!authenticatedUser.getId().equals(userId) && !isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         userService.addPaymentCard(userId, request);
         return ResponseEntity.ok().build();
     }

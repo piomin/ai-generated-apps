@@ -48,15 +48,43 @@ public class UserService {
             paymentCardRepository.delete(existingCard);
         }
 
+        // In production: Call payment provider (e.g., Stripe) to tokenize the card
+        // Example: String token = paymentProvider.tokenizeCard(request.getCardNumber(), request.getCvv(), ...);
+        // For demo purposes, we simulate tokenization
+        String cardToken = tokenizeCard(request.getCardNumber(), request.getCvv());
+        String last4 = request.getCardNumber().substring(request.getCardNumber().length() - 4);
+        String cardBrand = detectCardBrand(request.getCardNumber());
+
         PaymentCard card = new PaymentCard();
         card.setUser(user);
-        card.setCardNumber(request.getCardNumber());
+        card.setCardToken(cardToken); // Store token instead of PAN
+        card.setLast4(last4); // Store only last 4 digits for display
         card.setCardHolderName(request.getCardHolderName());
         card.setExpiryMonth(request.getExpiryMonth());
         card.setExpiryYear(request.getExpiryYear());
-        card.setCvv(request.getCvv());
+        card.setCardBrand(cardBrand);
+        // CVV is NOT stored - only used transiently for tokenization
 
         paymentCardRepository.save(card);
+    }
+
+    /**
+     * Simulates card tokenization. In production, use payment provider API (Stripe, Braintree, etc.)
+     */
+    private String tokenizeCard(String cardNumber, String cvv) {
+        // In production: call payment provider API to tokenize
+        // return paymentProvider.createToken(cardNumber, cvv);
+        return "tok_" + java.util.UUID.randomUUID().toString().replace("-", "");
+    }
+
+    /**
+     * Detects card brand from card number
+     */
+    private String detectCardBrand(String cardNumber) {
+        if (cardNumber.startsWith("4")) return "Visa";
+        if (cardNumber.startsWith("5")) return "Mastercard";
+        if (cardNumber.startsWith("3")) return "Amex";
+        return "Unknown";
     }
 
     public UserResponse getUserById(Long userId) {

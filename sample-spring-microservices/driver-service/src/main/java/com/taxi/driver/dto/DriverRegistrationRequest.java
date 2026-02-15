@@ -1,5 +1,6 @@
 package com.taxi.driver.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,6 +29,7 @@ public class DriverRegistrationRequest {
     private String licenseNumber;
 
     @NotNull(message = "Car details are required")
+    @Valid
     private CarDetails carDetails;
 
     @Data

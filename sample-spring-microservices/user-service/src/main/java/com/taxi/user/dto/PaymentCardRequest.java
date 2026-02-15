@@ -3,10 +3,12 @@ package com.taxi.user.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentCardRequest {
@@ -28,4 +30,18 @@ public class PaymentCardRequest {
     @NotBlank(message = "CVV is required")
     @Pattern(regexp = "\\d{3,4}", message = "CVV must be 3 or 4 digits")
     private String cvv;
+
+    @Override
+    public String toString() {
+        String maskedCardNumber = cardNumber != null && cardNumber.length() >= 4
+                ? "************" + cardNumber.substring(cardNumber.length() - 4)
+                : "****";
+        return "PaymentCardRequest{" +
+                "cardNumber='" + maskedCardNumber + '\'' +
+                ", cardHolderName='" + cardHolderName + '\'' +
+                ", expiryMonth='" + expiryMonth + '\'' +
+                ", expiryYear='" + expiryYear + '\'' +
+                ", cvv='***'" +
+                '}';
+    }
 }
