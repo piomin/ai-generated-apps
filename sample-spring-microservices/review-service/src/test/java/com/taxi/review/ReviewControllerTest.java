@@ -72,4 +72,88 @@ class ReviewControllerTest {
                 .andExpect(jsonPath("$.totalReviews").exists())
                 .andExpect(jsonPath("$.averageRating").exists());
     }
+
+    @Test
+    @WithMockUser
+    void shouldGetDriverReviewsWithDefaultPagination() throws Exception {
+        ReviewRequest request = new ReviewRequest(10L, 1L, 1L, 5, "Great driver!");
+        mockMvc.perform(post("/api/reviews")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/reviews/driver/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    @WithMockUser
+    void shouldGetDriverReviewsWithCustomPagination() throws Exception {
+        for (int i = 1; i <= 35; i++) {
+            ReviewRequest req = new ReviewRequest(100L + i, 1L, 2L, 5, "Review " + i);
+            mockMvc.perform(post("/api/reviews")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isCreated());
+        }
+
+        mockMvc.perform(get("/api/reviews/driver/2?page=1&size=10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(35))
+                .andExpect(jsonPath("$.totalPages").value(4))
+                .andExpect(jsonPath("$.content").length(10));
+    }
+
+    @Test
+    @WithMockUser
+    void shouldGetEmptyDriverReviews() throws Exception {
+        mockMvc.perform(get("/api/reviews/driver/999"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0));
+    }
+
+    @Test
+    @WithMockUser
+    void shouldCapSizeWhenExceedsMaximum() throws Exception {
+        ReviewRequest request = new ReviewRequest(50L, 1L, 3L, 5, "Test review");
+        mockMvc.perform(post("/api/reviews")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/reviews/driver/3?page=0&size=200"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(100));
+    }
+
+    @Test
+    @WithMockUser
+    void shouldReturn400ForNegativePage() throws Exception {
+        mockMvc.perform(get("/api/reviews/driver/1?page=-1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void shouldReturn400ForNonPositiveSize() throws Exception {
+        mockMvc.perform(get("/api/reviews/driver/1?page=0&size=0"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/reviews/driver/1?page=0&size=-5"))
+                .andExpect(status().isBadRequest());
+    }
 }
