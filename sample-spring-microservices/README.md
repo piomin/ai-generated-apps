@@ -65,14 +65,15 @@ This system implements a microservices architecture with the following services:
                     ┌───────────┘       └───────────┐
                     │                               │
                     ▼                               ▼
-         ┌─────────────────────┐       ┌─────────────────────┐
-         │  Payment Service    │       │ Notification Service│
-         │      (8084)         │       │      (8086)         │
-         │                     │       │                     │
-         │ - Payment Process   │       │ - Email Sender      │
-         │ - Kafka Consumer    │       │ - Kafka Consumer    │
-         │ - Kafka Producer    │       │ - Trip Summaries    │
-         └──────────┬──────────┘       └─────────────────────┘
+          ┌─────────────────────┐       ┌─────────────────────┐
+          │  Payment Service    │       │ Notification Service│
+          │      (8084)         │       │      (8086)         │
+          │                     │       │                     │
+          │ - Payment Process   │       │ - Email Sender      │
+          │ - Kafka Consumer    │       │ - Kafka Consumer    │
+          │ - Kafka Producer    │       │ - Trip Summaries    │
+          │ - Payment Queries   │       │                     │
+          └──────────┬──────────┘       └─────────────────────┘
                     │
                     ▼
          ┌─────────────────────┐
@@ -123,9 +124,10 @@ Legend:
    - Publishes trip completion events to Kafka
 
 5. **Payment Service** (Port 8084)
-   - Asynchronous payment processing
-   - Listens to trip completion events from Kafka
-   - Publishes payment status events
+    - Asynchronous payment processing
+    - Listens to trip completion events from Kafka
+    - Publishes payment status events
+    - REST API for payment queries (read-only)
 
 6. **Review Service** (Port 8085)
    - Driver reviews and ratings
@@ -259,6 +261,11 @@ All requests go through the API Gateway at `http://localhost:8000`
 - `POST /api/reviews` - Create driver review (Authenticated)
 - `GET /api/reviews/driver/{driverId}` - Get driver reviews (Authenticated)
 - `GET /api/reviews/driver/{driverId}/summary` - Get driver review summary (Authenticated)
+
+### Payment Service
+
+- `GET /api/payments/{tripId}` - Get payment for a trip (Authenticated)
+- `GET /api/payments/user/{userId}` - Get user payment history (Authenticated)
 
 ## Fare Calculation
 

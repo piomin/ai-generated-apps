@@ -3,6 +3,7 @@ package com.taxi.payment.service;
 import com.taxi.common.config.KafkaTopics;
 import com.taxi.common.event.PaymentProcessedEvent;
 import com.taxi.common.event.TripCompletedEvent;
+import com.taxi.payment.dto.PaymentResponse;
 import com.taxi.payment.model.Payment;
 import com.taxi.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,10 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -80,5 +84,32 @@ public class PaymentService {
             Thread.currentThread().interrupt();
             return false;
         }
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentResponse getPaymentByTripId(Long tripId) {
+        return paymentRepository.findByTripId(tripId)
+                .map(this::mapToResponse)
+                .orElseThrow(() -> new RuntimeException("Payment not found for trip: " + tripId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentResponse> getPaymentsByUserId(Long userId) {
+        return paymentRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    private PaymentResponse mapToResponse(Payment payment) {
+        PaymentResponse response = new PaymentResponse();
+        response.setId(payment.getId());
+        response.setTripId(payment.getTripId());
+        response.setUserId(payment.getUserId());
+        response.setAmount(payment.getAmount());
+        response.setStatus(payment.getStatus());
+        response.setTransactionId(payment.getTransactionId());
+        response.setCreatedAt(payment.getCreatedAt());
+        return response;
     }
 }
