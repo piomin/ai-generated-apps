@@ -1,0 +1,13 @@
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/UserServiceApplication.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/config/SecurityConfig.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/controller/UserController.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/dto/PaymentCardRequest.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/dto/UserRegistrationRequest.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/dto/UserResponse.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/model/PaymentCard.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/model/User.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/repository/PaymentCardRepository.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/repository/UserRepository.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/service/UserService.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/validation/CardNumberValidator.java
+/workspace/repo/sample-spring-microservices/user-service/src/main/java/com/taxi/user/validation/ValidCardNumber.java

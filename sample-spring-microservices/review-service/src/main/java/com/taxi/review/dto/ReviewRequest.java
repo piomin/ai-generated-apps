@@ -1,28 +1,62 @@
 package com.taxi.review.dto;
 
-import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ReviewRequest {
-    @NotNull(message = "Trip ID is required")
     private Long tripId;
-
-    @NotNull(message = "User ID is required")
     private Long userId;
-
-    @NotNull(message = "Driver ID is required")
     private Long driverId;
-
-    @NotNull(message = "Rating is required")
-    @Min(value = 1, message = "Rating must be at least 1")
-    @Max(value = 5, message = "Rating must be at most 5")
     private Integer rating;
-
-    @Size(max = 1000, message = "Comment must not exceed 1000 characters")
     private String comment;
+
+    public ReviewRequest() {
+    }
+
+    public ReviewRequest(Long tripId, Long userId, Long driverId, Integer rating, String comment) {
+        this.tripId = tripId;
+        this.userId = userId;
+        this.driverId = driverId;
+        this.rating = rating;
+        this.comment = comment;
+    }
+
+    public Long getTripId() {
+        return tripId;
+    }
+
+    public void setTripId(Long tripId) {
+        this.tripId = tripId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public Long getDriverId() {
+        return driverId;
+    }
+
+    public void setDriverId(Long driverId) {
+        this.driverId = driverId;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
 }

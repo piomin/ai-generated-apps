@@ -1,0 +1,11 @@
+/workspace/repo/sample-spring-microservices/review-service/src/main/java/com/taxi/review/ReviewServiceApplication.java
+/workspace/repo/sample-spring-microservices/review-service/src/main/java/com/taxi/review/config/SecurityConfig.java
+/workspace/repo/sample-spring-microservices/review-service/src/main/java/com/taxi/review/controller/ReviewController.java
+/workspace/repo/sample-spring-microservices/review-service/src/main/java/com/taxi/review/dto/DriverReviewSummary.java
+/workspace/repo/sample-spring-microservices/review-service/src/main/java/com/taxi/review/dto/PageResponse.java
+/workspace/repo/sample-spring-microservices/review-service/src/main/java/com/taxi/review/dto/Review.java
+/workspace/repo/sample-spring-microservices/review-service/src/main/java/com/taxi/review/dto/ReviewRequest.java
+/workspace/repo/sample-spring-microservices/review-service/src/main/java/com/taxi/review/dto/ReviewResponse.java
+/workspace/repo/sample-spring-microservices/review-service/src/main/java/com/taxi/review/model/Review.java
+/workspace/repo/sample-spring-microservices/review-service/src/main/java/com/taxi/review/repository/ReviewRepository.java
+/workspace/repo/sample-spring-microservices/review-service/src/main/java/com/taxi/review/service/ReviewService.java
