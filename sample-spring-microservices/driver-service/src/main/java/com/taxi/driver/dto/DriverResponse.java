@@ -17,6 +17,7 @@ public class DriverResponse {
     private boolean active;
     private CarInfo car;
     private LocationInfo currentLocation;
+    private Double distanceKm;
 
     @Data
     @NoArgsConstructor
