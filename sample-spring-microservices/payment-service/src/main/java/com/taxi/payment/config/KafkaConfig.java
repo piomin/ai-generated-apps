@@ -1,6 +1,7 @@
 package com.taxi.payment.config;
 
 import com.taxi.common.event.PaymentProcessedEvent;
+import com.taxi.common.event.TripCancelledEvent;
 import com.taxi.common.event.TripCompletedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -24,10 +25,10 @@ public class KafkaConfig {
     private String bootstrapServers;
 
     @Bean
-    public ConsumerFactory<String, TripCompletedEvent> consumerFactory() {
+    public ConsumerFactory<String, TripCompletedEvent> completedEventConsumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "payment-service");
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "payment-service-completed");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
@@ -36,10 +37,30 @@ public class KafkaConfig {
     }
 
     @Bean
+    public ConsumerFactory<String, TripCancelledEvent> cancelledEventConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "payment-service-cancelled");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, TripCancelledEvent.class.getName());
+        return new DefaultKafkaConsumerFactory<>(props);
+    }
+
+    @Bean
     public ConcurrentKafkaListenerContainerFactory<String, TripCompletedEvent> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, TripCompletedEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
+        factory.setConsumerFactory(completedEventConsumerFactory());
+        return factory;
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, TripCancelledEvent> cancelledEventKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, TripCancelledEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(cancelledEventConsumerFactory());
         return factory;
     }
 

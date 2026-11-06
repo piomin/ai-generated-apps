@@ -2,6 +2,7 @@ package com.taxi.payment.service;
 
 import com.taxi.common.config.KafkaTopics;
 import com.taxi.common.event.PaymentProcessedEvent;
+import com.taxi.common.event.TripCancelledEvent;
 import com.taxi.common.event.TripCompletedEvent;
 import com.taxi.payment.model.Payment;
 import com.taxi.payment.repository.PaymentRepository;
@@ -55,6 +56,58 @@ public class PaymentService {
             paymentRepository.save(payment);
         } catch (DataIntegrityViolationException e) {
             // Handle unique constraint violation as idempotency (concurrent delivery)
+            log.info("Payment already processed for trip: {} (concurrent delivery)", event.getTripId());
+            return;
+        }
+
+        // Publish payment processed event
+        PaymentProcessedEvent paymentEvent = new PaymentProcessedEvent(
+                event.getTripId(),
+                event.getUserId(),
+                payment.getAmount(),
+                paymentSuccess,
+                payment.getTransactionId()
+        );
+        kafkaTemplate.send(KafkaTopics.PAYMENT_PROCESSED, paymentEvent);
+    }
+
+    @KafkaListener(topics = KafkaTopics.TRIP_CANCELLED, groupId = "payment-service")
+    @Transactional
+    public void processTripCancelledEvent(TripCancelledEvent event) {
+        log.info("Processing cancellation fee for trip: {}", event.getTripId());
+
+        if (event.getCancellationFee() == null || event.getCancellationFee().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            log.info("No cancellation fee for trip: {}, skipping payment processing", event.getTripId());
+            return;
+        }
+
+        // Idempotency check: skip if payment already exists for this trip
+        if (paymentRepository.existsByTripId(event.getTripId())) {
+            log.info("Payment already exists for trip: {}, skipping duplicate processing", event.getTripId());
+            return;
+        }
+
+        Payment payment = new Payment();
+        payment.setTripId(event.getTripId());
+        payment.setUserId(event.getUserId());
+        payment.setAmount(event.getCancellationFee());
+        payment.setStatus(Payment.PaymentStatus.PENDING);
+
+        // Simulate payment processing for cancellation fee
+        boolean paymentSuccess = processPayment(payment);
+
+        if (paymentSuccess) {
+            payment.setStatus(Payment.PaymentStatus.COMPLETED);
+            payment.setTransactionId(UUID.randomUUID().toString());
+            log.info("Cancellation fee payment completed for trip: {}", event.getTripId());
+        } else {
+            payment.setStatus(Payment.PaymentStatus.FAILED);
+            log.error("Cancellation fee payment failed for trip: {}", event.getTripId());
+        }
+
+        try {
+            paymentRepository.save(payment);
+        } catch (DataIntegrityViolationException e) {
             log.info("Payment already processed for trip: {} (concurrent delivery)", event.getTripId());
             return;
         }

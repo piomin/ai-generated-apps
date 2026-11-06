@@ -1,6 +1,7 @@
 package com.taxi.trip.service;
 
 import com.taxi.common.config.KafkaTopics;
+import com.taxi.common.event.TripCancelledEvent;
 import com.taxi.common.event.TripCompletedEvent;
 import com.taxi.trip.dto.TripRequest;
 import com.taxi.trip.dto.TripResponse;
@@ -22,6 +23,7 @@ public class TripService {
     private final TripRepository tripRepository;
     private final FareCalculationService fareCalculationService;
     private final KafkaTemplate<String, TripCompletedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, TripCancelledEvent> cancelledEventKafkaTemplate;
 
     @Transactional
     public TripResponse requestTrip(TripRequest request) {
@@ -122,6 +124,68 @@ public class TripService {
         return mapToResponse(trip);
     }
 
+    @Transactional
+    public TripResponse cancelTrip(Long tripId, String jwtSubject, String role, String cancellationReason) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        if (trip.getStatus() == Trip.TripStatus.IN_PROGRESS) {
+            throw new RuntimeException("Cannot cancel trip that is in progress");
+        }
+        if (trip.getStatus() == Trip.TripStatus.COMPLETED) {
+            throw new RuntimeException("Cannot cancel trip that is already completed");
+        }
+        if (trip.getStatus() == Trip.TripStatus.CANCELLED) {
+            throw new RuntimeException("Trip is already cancelled");
+        }
+
+        boolean isDriver = "DRIVER".equals(role);
+        boolean isUser = "USER".equals(role);
+
+        if (isUser) {
+            if (!trip.getUserId().equals(tripId) && !jwtSubject.equals(String.valueOf(trip.getUserId()))) {
+                throw new RuntimeException("User can only cancel their own trips");
+            }
+            if (trip.getStatus() == Trip.TripStatus.ACCEPTED && !isDriver) {
+                BigDecimal cancellationFee = fareCalculationService.calculateCancellationFee(
+                        trip.getStartedAt(), false);
+                trip.setCancellationFee(cancellationFee);
+            }
+        } else if (isDriver) {
+            if (trip.getDriverId() == null || !trip.getDriverId().equals(tripId)) {
+                throw new RuntimeException("Driver can only cancel trips assigned to them");
+            }
+            trip.setDriverId(null);
+            trip.setCancellationFee(BigDecimal.ZERO);
+        } else {
+            throw new RuntimeException("Invalid cancellation role");
+        }
+
+        trip.setStatus(Trip.TripStatus.CANCELLED);
+        trip.setCancelledAt(LocalDateTime.now());
+        trip.setCancelledBy(isUser ? Trip.CancelledBy.USER : Trip.CancelledBy.DRIVER);
+        trip.setCancellationReason(cancellationReason);
+
+        trip = tripRepository.save(trip);
+
+        // Publish trip cancelled event to Kafka
+        TripCancelledEvent event = new TripCancelledEvent(
+                trip.getId(),
+                trip.getUserId(),
+                trip.getDriverId(),
+                "",
+                trip.getPickupLocation(),
+                trip.getDropoffLocation(),
+                trip.getCancelledAt(),
+                isUser ? "USER" : "DRIVER",
+                cancellationReason,
+                trip.getCancellationFee()
+        );
+        cancelledEventKafkaTemplate.send(KafkaTopics.TRIP_CANCELLED, event);
+
+        return mapToResponse(trip);
+    }
+
     public TripResponse getTripById(Long tripId) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
@@ -156,6 +220,10 @@ public class TripService {
         response.setRequestedAt(trip.getRequestedAt());
         response.setStartedAt(trip.getStartedAt());
         response.setCompletedAt(trip.getCompletedAt());
+        response.setCancelledAt(trip.getCancelledAt());
+        response.setCancelledBy(trip.getCancelledBy());
+        response.setCancellationReason(trip.getCancellationReason());
+        response.setCancellationFee(trip.getCancellationFee());
         return response;
     }
 }

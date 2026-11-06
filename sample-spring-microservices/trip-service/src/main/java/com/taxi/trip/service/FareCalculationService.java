@@ -1,10 +1,12 @@
 package com.taxi.trip.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 @Service
 public class FareCalculationService {
@@ -13,6 +15,12 @@ public class FareCalculationService {
     private static final BigDecimal COST_PER_KM = new BigDecimal("2.50");
     private static final BigDecimal PEAK_HOUR_MULTIPLIER = new BigDecimal("1.5");
     private static final BigDecimal NIGHT_HOUR_MULTIPLIER = new BigDecimal("1.3");
+
+    @Value("${taxi.cancellation.grace-period:2m}")
+    private String cancellationGracePeriod;
+
+    @Value("${taxi.cancellation.fee:5.00}")
+    private BigDecimal cancellationFee;
 
     public BigDecimal calculateFare(Double distance, LocalDateTime requestTime) {
         BigDecimal fare = BASE_FARE;
@@ -50,5 +58,32 @@ public class FareCalculationService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return EARTH_RADIUS * c;
+    }
+
+    public boolean isWithinGracePeriod(LocalDateTime acceptedAt) {
+        if (acceptedAt == null) {
+            return true;
+        }
+        long minutesSinceAcceptance = ChronoUnit.MINUTES.between(acceptedAt, LocalDateTime.now());
+        return minutesSinceAcceptance <= getGracePeriodMinutes();
+    }
+
+    private long getGracePeriodMinutes() {
+        if (cancellationGracePeriod.endsWith("m")) {
+            return Long.parseLong(cancellationGracePeriod.substring(0, cancellationGracePeriod.length() - 1));
+        } else if (cancellationGracePeriod.endsWith("h")) {
+            return Long.parseLong(cancellationGracePeriod.substring(0, cancellationGracePeriod.length() - 1)) * 60;
+        }
+        return 2;
+    }
+
+    public BigDecimal calculateCancellationFee(LocalDateTime acceptedAt, boolean isDriverInitiated) {
+        if (isDriverInitiated) {
+            return BigDecimal.ZERO;
+        }
+        if (isWithinGracePeriod(acceptedAt)) {
+            return BigDecimal.ZERO;
+        }
+        return cancellationFee;
     }
 }
