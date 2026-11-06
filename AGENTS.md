@@ -14,6 +14,11 @@ These rules apply to every AI coding agent working in this repository (e.g. Open
 - Use clear, descriptive commit messages and reference the issue (e.g. `Refs #6`).
 - Do not merge the branch yourself. Opening a pull request (with `Closes #<issue-number>` in the description) is welcome, but merging is left to a human.
 
+## Build output
+
+- **Never commit build output**, in particular `target/` directories (compiled classes, jars, `maven-status`, `maven-archiver`, etc.). Only source, test and documentation files belong in a change.
+- If `target/` files show up in `git status` (modified, deleted or untracked), leave them out of the commit and do not restore or edit them by hand.
+
 ## Issue reporting
 
 After finishing a task that originates from a GitHub issue, **post a comment on that issue** (e.g. with `gh issue comment <number> --body "..."`).
