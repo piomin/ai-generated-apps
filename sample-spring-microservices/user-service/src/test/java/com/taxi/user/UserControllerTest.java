@@ -2,6 +2,7 @@ package com.taxi.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taxi.user.dto.PaymentCardRequest;
+import com.taxi.user.dto.UpdateProfileRequest;
 import com.taxi.user.dto.UserRegistrationRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,5 +83,104 @@ class UserControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().is5xxServerError());
+    }
+
+    @Test
+    void shouldUpdateProfile() throws Exception {
+        UserRegistrationRequest regRequest = new UserRegistrationRequest(
+                "update@example.com",
+                "password123",
+                "John",
+                "Doe",
+                "+1234567890"
+        );
+
+        mockMvc.perform(post("/api/users/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(regRequest)))
+                .andExpect(status().isCreated());
+
+        UpdateProfileRequest updateRequest = new UpdateProfileRequest(
+                "Jane",
+                "Smith",
+                "+9876543210"
+        );
+
+        mockMvc.perform(put("/api/users/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("Jane"))
+                .andExpect(jsonPath("$.lastName").value("Smith"))
+                .andExpect(jsonPath("$.phoneNumber").value("+9876543210"));
+    }
+
+    @Test
+    void shouldReturn400ForInvalidUpdateProfileRequest() throws Exception {
+        UpdateProfileRequest updateRequest = new UpdateProfileRequest(
+                "",
+                "Smith",
+                "+9876543210"
+        );
+
+        mockMvc.perform(put("/api/users/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRemovePaymentCard() throws Exception {
+        UserRegistrationRequest regRequest = new UserRegistrationRequest(
+                "carduser@example.com",
+                "password123",
+                "John",
+                "Doe",
+                "+1234567890"
+        );
+
+        mockMvc.perform(post("/api/users/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(regRequest)))
+                .andExpect(status().isCreated());
+
+        PaymentCardRequest cardRequest = new PaymentCardRequest(
+                "4111111111111111",
+                "John Doe",
+                "12",
+                "2025",
+                "123"
+        );
+
+        mockMvc.perform(post("/api/users/{userId}/payment-card", 1)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(cardRequest)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(delete("/api/users/me/payment-card"))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/users/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hasPaymentCard").value(false));
+    }
+
+    @Test
+    void shouldReturn404WhenNoPaymentCardToRemove() throws Exception {
+        UserRegistrationRequest regRequest = new UserRegistrationRequest(
+                "nocarduser@example.com",
+                "password123",
+                "John",
+                "Doe",
+                "+1234567890"
+        );
+
+        mockMvc.perform(post("/api/users/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(regRequest)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(delete("/api/users/me/payment-card"))
+                .andExpect(status().isNoContent());
     }
 }
