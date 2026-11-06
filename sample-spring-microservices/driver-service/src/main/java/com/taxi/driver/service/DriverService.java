@@ -2,6 +2,7 @@ package com.taxi.driver.service;
 
 import com.taxi.common.config.KafkaTopics;
 import com.taxi.common.event.DriverLocationUpdateEvent;
+import com.taxi.common.util.HaversineUtil;
 import com.taxi.driver.dto.DriverRegistrationRequest;
 import com.taxi.driver.dto.DriverResponse;
 import com.taxi.driver.dto.LocationUpdateRequest;
@@ -11,11 +12,15 @@ import com.taxi.driver.model.DriverLocation;
 import com.taxi.driver.repository.DriverLocationRepository;
 import com.taxi.driver.repository.DriverRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +30,9 @@ public class DriverService {
     private final DriverRepository driverRepository;
     private final DriverLocationRepository driverLocationRepository;
     private final KafkaTemplate<String, DriverLocationUpdateEvent> kafkaTemplate;
+
+    @Value("${taxi.driver.location-max-age:5m}")
+    private Duration locationMaxAge;
 
     @Transactional
     public DriverResponse registerDriver(DriverRegistrationRequest request) {
@@ -124,4 +132,46 @@ public class DriverService {
 
         return response;
     }
+
+    public List<DriverResponse> getNearbyDrivers(Double latitude, Double longitude, Double radiusKm, Integer limit) {
+        if (radiusKm == null) {
+            radiusKm = 5.0;
+        }
+        if (limit == null) {
+            limit = 10;
+        }
+        LocalDateTime minTimestamp = LocalDateTime.now().minus(locationMaxAge);
+
+        Double minLat = latitude - (radiusKm / EARTH_RADIUS);
+        Double maxLat = latitude + (radiusKm / EARTH_RADIUS);
+        Double minLon = longitude - (radiusKm / (EARTH_RADIUS * Math.cos(Math.toRadians(latitude))));
+        Double maxLon = longitude + (radiusKm / (EARTH_RADIUS * Math.cos(Math.toRadians(latitude))));
+
+        List<DriverLocation> locations = driverLocationRepository.findActiveLocationsInBoundingBox(
+                minTimestamp, minLat, maxLat, minLon, maxLon);
+
+        List<DriverResponse> nearbyDrivers = new ArrayList<>();
+        for (DriverLocation location : locations) {
+            double distance = HaversineUtil.calculateDistance(
+                    latitude, longitude,
+                    location.getLatitude(), location.getLongitude()
+            );
+
+            if (distance <= radiusKm) {
+                DriverResponse response = mapToResponse(location.getDriver());
+                response.setDistanceKm(HaversineUtil.roundToTwoDecimals(distance));
+                nearbyDrivers.add(response);
+            }
+        }
+
+        nearbyDrivers.sort(Comparator.comparing(DriverResponse::getDistanceKm));
+
+        if (limit > 0 && nearbyDrivers.size() > limit) {
+            nearbyDrivers = nearbyDrivers.subList(0, limit);
+        }
+
+        return nearbyDrivers;
+    }
+
+    private static final int EARTH_RADIUS = 6371;
 }
