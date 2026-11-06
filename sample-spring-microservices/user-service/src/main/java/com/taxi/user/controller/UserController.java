@@ -1,6 +1,7 @@
 package com.taxi.user.controller;
 
 import com.taxi.user.dto.PaymentCardRequest;
+import com.taxi.user.dto.UpdateProfileRequest;
 import com.taxi.user.dto.UserRegistrationRequest;
 import com.taxi.user.dto.UserResponse;
 import com.taxi.user.service.UserService;
@@ -60,5 +61,23 @@ public class UserController {
         String email = authentication.getName();
         UserResponse response = userService.getUserByEmail(email);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateProfile(
+            @Valid @RequestBody UpdateProfileRequest request,
+            Authentication authentication) {
+        String email = authentication.getName();
+        UserResponse authenticatedUser = userService.getUserByEmail(email);
+        UserResponse response = userService.updateProfile(authenticatedUser.getId(), request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/me/payment-card")
+    public ResponseEntity<Void> removePaymentCard(Authentication authentication) {
+        String email = authentication.getName();
+        UserResponse authenticatedUser = userService.getUserByEmail(email);
+        userService.removePaymentCard(authenticatedUser.getId());
+        return ResponseEntity.noContent().build();
     }
 }

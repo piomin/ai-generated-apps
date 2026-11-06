@@ -1,6 +1,7 @@
 package com.taxi.user.service;
 
 import com.taxi.user.dto.PaymentCardRequest;
+import com.taxi.user.dto.UpdateProfileRequest;
 import com.taxi.user.dto.UserRegistrationRequest;
 import com.taxi.user.dto.UserResponse;
 import com.taxi.user.model.PaymentCard;
@@ -106,7 +107,37 @@ public class UserService {
         response.setFirstName(user.getFirstName());
         response.setLastName(user.getLastName());
         response.setPhoneNumber(user.getPhoneNumber());
-        response.setHasPaymentCard(user.getPaymentCard() != null);
+        if (user.getPaymentCard() != null) {
+            response.setCardBrand(user.getPaymentCard().getCardBrand());
+            response.setLast4(user.getPaymentCard().getLast4());
+        }
         return response;
+    }
+
+    @Transactional
+    public UserResponse updateProfile(Long userId, UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+
+        user = userRepository.save(user);
+
+        return mapToResponse(user);
+    }
+
+    @Transactional
+    public void removePaymentCard(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        PaymentCard existingCard = paymentCardRepository.findByUserId(userId).orElse(null);
+        if (existingCard != null) {
+            paymentCardRepository.delete(existingCard);
+        }
     }
 }
