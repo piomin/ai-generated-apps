@@ -1,5 +1,6 @@
 package com.taxi.trip.config;
 
+import com.taxi.common.event.TripCancelledEvent;
 import com.taxi.common.event.TripCompletedEvent;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -32,5 +33,19 @@ public class KafkaConfig {
     @Bean
     public KafkaTemplate<String, TripCompletedEvent> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
+    }
+
+    @Bean
+    public ProducerFactory<String, TripCancelledEvent> cancelledEventProducerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        return new DefaultKafkaProducerFactory<>(configProps);
+    }
+
+    @Bean
+    public KafkaTemplate<String, TripCancelledEvent> cancelledEventKafkaTemplate() {
+        return new KafkaTemplate<>(cancelledEventProducerFactory());
     }
 }

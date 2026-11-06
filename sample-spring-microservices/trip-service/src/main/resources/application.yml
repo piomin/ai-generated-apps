@@ -24,3 +24,8 @@ spring:
 
 server:
   port: 8083
+
+taxi:
+  cancellation:
+    grace-period: 2m
+    fee: 5.00

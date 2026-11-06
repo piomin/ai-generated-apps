@@ -70,7 +70,20 @@ public class Trip {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    `@PrePersist`
+    @Column(nullable = true)
+    private LocalDateTime cancelledAt;
+
+    @Column(nullable = true)
+    @Enumerated(EnumType.STRING)
+    private CancelledBy cancelledBy;
+
+    @Column(nullable = true)
+    private String cancellationReason;
+
+    @Column(nullable = true)
+    private BigDecimal cancellationFee;
+
+    @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
@@ -86,5 +99,9 @@ public class Trip {
 
     public enum TripStatus {
         REQUESTED, ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED
+    }
+
+    public enum CancelledBy {
+        USER, DRIVER
     }
 }

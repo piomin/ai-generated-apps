@@ -250,6 +250,11 @@ All requests go through the API Gateway at `http://localhost:8000`
 - `PUT /api/trips/{tripId}/accept?driverId={id}` - Accept trip (Authenticated)
 - `PUT /api/trips/{tripId}/start` - Start trip (Authenticated)
 - `PUT /api/trips/{tripId}/complete?userEmail={email}` - Complete trip (Authenticated)
+- `PUT /api/trips/{tripId}/cancel` - Cancel trip (Authenticated)
+  - Request body: `{ "cancellationReason": "optional reason" }`
+  - Only the trip owner or assigned driver can cancel
+  - Returns `409 Conflict` if trip is already completed, cancelled, or in progress
+  - Cancellation fees may apply (see below)
 - `GET /api/trips/{tripId}` - Get trip details (Authenticated)
 - `GET /api/trips/user/{userId}` - Get user trip history (Authenticated)
 - `GET /api/trips/driver/{driverId}` - Get driver trip history (Authenticated)
@@ -270,6 +275,40 @@ The system calculates fares based on:
 - **Night Hours** (10 PM - 6 AM): 1.3x multiplier
 
 Distance is calculated using the Haversine formula based on GPS coordinates.
+
+## Trip Cancellation
+
+### Cancellation Policy
+
+Trips can be cancelled according to the following rules:
+
+| Current Status | Cancel Allowed | Who Can Cancel | Cancellation Fee |
+|----------------|----------------|----------------|------------------|
+| `REQUESTED`    | Yes            | User only      | Free |
+| `ACCEPTED`     | Yes            | User or Driver | User: $5.00 after 2-min grace period<br>Driver: Free |
+| `IN_PROGRESS`  | No             | -              | N/A |
+| `COMPLETED`    | No             | -              | N/A |
+| `CANCELLED`    | No             | -              | N/A |
+
+### Cancellation Fee
+
+- **Grace Period**: 2 minutes after driver acceptance (configurable via `taxi.cancellation.grace-period`)
+- **Fee**: $5.00 flat fee (configurable via `taxi.cancellation.fee`)
+- Driver-initiated cancellations are always free
+
+### Event-Driven Cancellation
+
+When a trip is cancelled:
+
+1. **Trip Service** publishes a `TripCancelledEvent` to Kafka
+2. **Notification Service** sends emails to user and driver
+3. **Payment Service** processes the cancellation fee (if applicable)
+
+### Kafka Topics
+
+- `trip-cancelled` - Published by Trip Service, consumed by Notification and Payment services
+
+## Testing
 
 ## Testing
 

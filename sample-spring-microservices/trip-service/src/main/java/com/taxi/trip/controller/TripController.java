@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,6 +18,28 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TripController {
     private final TripService tripService;
+
+    private String getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof String) {
+            return (String) authentication.getPrincipal();
+        }
+        return null;
+    }
+
+    private String getCurrentRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getAuthorities() != null) {
+            if (authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.hasAuthority("ROLE_DRIVER"))) {
+                return "DRIVER";
+            } else if (authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.hasAuthority("ROLE_USER"))) {
+                return "USER";
+            }
+        }
+        return null;
+    }
 
     @PostMapping
     public ResponseEntity<TripResponse> requestTrip(@Valid @RequestBody TripRequest request) {
@@ -61,5 +85,15 @@ public class TripController {
     public ResponseEntity<List<TripResponse>> getDriverTripHistory(@PathVariable Long driverId) {
         List<TripResponse> trips = tripService.getDriverTripHistory(driverId);
         return ResponseEntity.ok(trips);
+    }
+
+    @PutMapping("/{tripId}/cancel")
+    public ResponseEntity<TripResponse> cancelTrip(
+            @PathVariable Long tripId,
+            @RequestParam(required = false) String cancellationReason) {
+        String userId = getCurrentUserId();
+        String role = getCurrentRole();
+        TripResponse response = tripService.cancelTrip(tripId, userId, role, cancellationReason);
+        return ResponseEntity.ok(response);
     }
 }

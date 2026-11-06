@@ -24,4 +24,8 @@ public class TripResponse {
     private LocalDateTime requestedAt;
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
+    private LocalDateTime cancelledAt;
+    private Trip.CancelledBy cancelledBy;
+    private String cancellationReason;
+    private BigDecimal cancellationFee;
 }
