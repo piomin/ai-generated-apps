@@ -1,0 +1,4 @@
+/workspace/repo/sample-spring-microservices/common/src/main/java/com/taxi/common/config/KafkaTopics.java
+/workspace/repo/sample-spring-microservices/common/src/main/java/com/taxi/common/event/DriverLocationUpdateEvent.java
+/workspace/repo/sample-spring-microservices/common/src/main/java/com/taxi/common/event/PaymentProcessedEvent.java
+/workspace/repo/sample-spring-microservices/common/src/main/java/com/taxi/common/event/TripCompletedEvent.java

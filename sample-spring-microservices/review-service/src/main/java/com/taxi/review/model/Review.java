@@ -1,42 +1,82 @@
 package com.taxi.review.model;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "reviews")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Review {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private Long tripId;
-
-    @Column(nullable = false)
     private Long userId;
-
-    @Column(nullable = false)
     private Long driverId;
-
-    @Column(nullable = false)
-    private Integer rating; // 1-5 stars
-
-    @Column(length = 1000)
+    private Integer rating;
     private String comment;
-
-    @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
+    public Review() {
+    }
+
+    public Review(Long id, Long tripId, Long userId, Long driverId, Integer rating, String comment, LocalDateTime createdAt) {
+        this.id = id;
+        this.tripId = tripId;
+        this.userId = userId;
+        this.driverId = driverId;
+        this.rating = rating;
+        this.comment = comment;
+        this.createdAt = createdAt;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getTripId() {
+        return tripId;
+    }
+
+    public void setTripId(Long tripId) {
+        this.tripId = tripId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public Long getDriverId() {
+        return driverId;
+    }
+
+    public void setDriverId(Long driverId) {
+        this.driverId = driverId;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

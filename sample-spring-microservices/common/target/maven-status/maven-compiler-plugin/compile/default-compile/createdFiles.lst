@@ -1,0 +1,4 @@
+com/taxi/common/event/DriverLocationUpdateEvent.class
+com/taxi/common/event/PaymentProcessedEvent.class
+com/taxi/common/config/KafkaTopics.class
+com/taxi/common/event/TripCompletedEvent.class

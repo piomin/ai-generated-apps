@@ -257,7 +257,11 @@ All requests go through the API Gateway at `http://localhost:8000`
 ### Review Service
 
 - `POST /api/reviews` - Create driver review (Authenticated)
-- `GET /api/reviews/driver/{driverId}` - Get driver reviews (Authenticated)
+- `GET /api/reviews/driver/{driverId}` - Get driver reviews (Authenticated, paginated)
+  - Query parameters:
+    - `page` (optional, default: 0) - Page number (zero-indexed)
+    - `size` (optional, default: 20, max: 100) - Number of items per page
+  - Returns paginated response with `content`, `page`, `size`, `totalElements`, `totalPages`
 - `GET /api/reviews/driver/{driverId}/summary` - Get driver review summary (Authenticated)
 
 ## Fare Calculation
